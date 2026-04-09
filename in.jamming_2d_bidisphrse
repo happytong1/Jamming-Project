@@ -1,0 +1,171 @@
+# ============================================================
+# 2D bidisperse frictionless granular jamming
+# Windows version
+# Hooke contact + damped dynamics relaxation
+# N = 512, diameter ratio = 1 : 1.4
+# ============================================================
+
+clear
+units           lj
+dimension       2
+boundary        p p p
+atom_style      sphere
+newton          off
+
+# ------------------------------------------------------------
+# Windows random seed
+# 用 cmd 的 %RANDOM%，避免 Linux shell 命令
+# ------------------------------------------------------------
+shell           cmd /c "echo %RANDOM% > seed_win.tmp"
+variable        seed file seed_win.tmp
+variable        seed2 equal ${seed}+24681
+
+print           "seed  = ${seed}"
+print           "seed2 = ${seed2}"
+
+# ------------------------------------------------------------
+# Basic parameters
+# ------------------------------------------------------------
+variable        N1 equal 256
+variable        N2 equal 256
+variable        N  equal ${N1}+${N2}
+
+variable        d1 equal 1.0
+variable        d2 equal 1.4
+variable        rho equal 1.0
+
+# 初始体积分数设低一些，避免严重重叠
+variable        phi0 equal 0.20
+
+variable        pi equal 3.141592653589793
+variable        A1 equal ${N1}*${pi}*(${d1}*0.5)^2
+variable        A2 equal ${N2}*${pi}*(${d2}*0.5)^2
+variable        Apart equal ${A1}+${A2}
+variable        L0 equal sqrt(${Apart}/${phi0})
+
+print           "N   = ${N}"
+print           "L0  = ${L0}"
+print           "phi0= ${phi0}"
+
+# ------------------------------------------------------------
+# Create simulation box
+# ------------------------------------------------------------
+region          box block 0 ${L0} 0 ${L0} -0.1 0.1 units box
+create_box      2 box
+
+# ------------------------------------------------------------
+# Random insertion
+# 低初始 phi 下直接随机插入即可
+# ------------------------------------------------------------
+create_atoms    1 random ${N1} ${seed}  box
+create_atoms    2 random ${N2} ${seed2} box
+
+# ------------------------------------------------------------
+# Particle properties
+# ------------------------------------------------------------
+set             type 1 diameter ${d1}
+set             type 2 diameter ${d2}
+set             type 1 density  ${rho}
+set             type 2 density  ${rho}
+
+# 强制 2D
+fix             planar all enforce2d
+
+# ------------------------------------------------------------
+# Granular Hooke contact
+# gran/hooke/history Kn Kt gamma_n gamma_t mu dampflag
+# 这里设 Kt = 0, gamma_t = 0, mu = 0 => 无摩擦
+# ------------------------------------------------------------
+pair_style      gran/hooke/history 2.0e4 0.0 100.0 0.0 0.0 1
+pair_coeff      * *
+
+neighbor        0.5 bin
+neigh_modify    delay 0 every 1 check yes
+
+# ------------------------------------------------------------
+# Dynamics: nve/sphere + viscous damping
+# 这就是“阻尼动力学松弛”
+# ------------------------------------------------------------
+fix             integrator all nve/sphere
+fix             damp all viscous 20.0
+
+# 时间步稍小一点，更稳
+timestep        5.0e-5
+
+# 从静止开始
+velocity        all set 0.0 0.0 0.0
+
+# ------------------------------------------------------------
+# Computes / variables
+# ------------------------------------------------------------
+compute         ke_trans all ke
+compute         ke_rot   all erotate/sphere
+
+variable        KE    equal "c_ke_trans"
+variable        KEr   equal "c_ke_rot"
+variable        phi   equal "${Apart}/(lx*ly)"
+variable        KEtot equal "c_ke_trans + c_ke_rot"
+variable        st    equal "step"
+variable        pr    equal "press"
+variable        lxv   equal "lx"
+variable        lyv   equal "ly"
+
+thermo          500
+thermo_style    custom step atoms v_phi press ke c_ke_rot lx ly
+thermo_modify   lost warn
+
+# ------------------------------------------------------------
+# Dump for OVITO
+# 包含 radius 和 force，后续做力链图很方便
+# ------------------------------------------------------------
+dump            traj all custom 1000 traj_hooke_relax_win.lammpstrj id type x y z radius vx vy vz fx fy fz
+dump_modify     traj sort id
+
+write_data      data_hooke_init.dat
+
+# ============================================================
+# Stage 1: long initial relaxation
+# 目的：把随机初态先稳定下来
+# ============================================================
+print           "===== Stage 1: initial relaxation ====="
+run             50000
+
+# ============================================================
+# Stage 2: quasi-static compression
+# 每一轮：
+#   1) 缩盒
+#   2) 坐标同步缩放
+#   3) 阻尼松弛
+# ============================================================
+
+# 压缩参数
+variable        ncycle equal 250
+variable        scale  equal 0.9995
+
+label           loop_compress
+variable        i loop ${ncycle}
+
+print           "Cycle ${i} BEFORE : step=${st}, phi=${phi}, press=${pr}, KEtot=${KEtot}"
+
+change_box      all x scale ${scale} y scale ${scale} remap units box
+
+# 压缩后清零速度，避免把上一轮残余动量带进来
+velocity        all set 0.0 0.0 0.0
+
+print           "Cycle ${i} AFTER compress: step=${st}, phi=${phi}, press=${pr}, KEtot=${KEtot}, lx=${lxv}, ly=${lyv}"
+
+# 每轮给足够松弛时间
+run             3000
+
+print           "Cycle ${i} AFTER relax: step=${st}, phi=${phi}, press=${pr}, KEtot=${KEtot}"
+
+next            i
+jump            SELF loop_compress
+
+# ============================================================
+# Final output
+# ============================================================
+write_data      data_hooke_final.dat
+print           "Finished. Final phi = ${phi}"
+
+shell           cmd /c "del seed_win.tmp"
