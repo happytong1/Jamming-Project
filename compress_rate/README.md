@@ -14,10 +14,10 @@ Jamming/
 │
 ├── compress_rate/
 │ ├── compress_rate_0.001/
-│ │ ├── press_phi_compress_rate_0.001.txt # φ–P 数据
-│ │ ├── log_compress_rate_0.001.txt # 自定义日志
-│ │ ├── running_rate_0.001.log # LAMMPS标准输出
-│ │ ├── traj_compress_rate_0.001.xyz # 轨迹文件（可视化）
+│ │ ├── press_phi_compress_rate_0.001.txt  # φ–P 数据
+│ │ ├── log_compress_rate_0.001.txt        # 自定义日志
+│ │ ├── running_rate_0.001.log             # LAMMPS标准输出
+│ │ ├── traj_compress_rate_0.001.xyz       # 轨迹文件（可视化）
 │ │
 │ ├── compress_rate_0.0001/
 │ │ ├── press_phi_compress_rate_0.0001.txt
@@ -25,10 +25,10 @@ Jamming/
 │ │ ├── running_rate_0.0001.log
 │ │ ├── traj_compress_rate_0.0001.xyz
 │
-├── in.compress_loop # LAMMPS输入脚本（核心）
-├── compress_loop_run.bat # 批量运行脚本（Windows）
-├── jamming.ipynb # 数据分析 & 绘图
-├── pressure_phi_curves.png # 示例输出图
+├── in.compress_loop                       # LAMMPS输入脚本（核心）
+├── compress_loop_run.bat                  # 批量运行脚本（Windows）
+├── jamming.ipynb                          # 数据分析 & 绘图
+├── pressure_phi_curves.png                # 示例输出图
 └── README.md
 ```
 
