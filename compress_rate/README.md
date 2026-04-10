@@ -51,8 +51,9 @@ Jamming/
 终端命令:
 
 ```bash
-# 注意在Jamming目录下
- ./compress_rate/compress_loop_run.bat  
+# 注意在Jamming目录下  
+# cd Jamming
+./compress_rate/compress_loop_run.bat  
 
 # 打开jamming.ipynb, 顺序执行代码即可生成p-phi曲线图
 ```
