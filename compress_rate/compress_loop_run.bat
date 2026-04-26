@@ -23,8 +23,8 @@ setlocal enabledelayedexpansion
 set "input_file=compress_rate/in.compress_loop"
 
 
-:: 循环运行命令, loop_rate值为0.01、0.001
-for %%L in (0.001 0.0001) do (
+:: 循环运行命令, loop_rate值为0.01、0.001 0.0001,0.00001
+for %%L in (0.05, 0.01, 0.007, 0.005, 0.003, 0.001) do (
     :: 1.设置保存路径 comcompress_rate_xx
     set "output_folder=compress_rate/compress_rate_%%L"
     set "log_file=compress_rate/compress_rate_%%L/running_rate_%%L.log"

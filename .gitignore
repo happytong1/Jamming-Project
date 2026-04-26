@@ -16,3 +16,4 @@ __pycache__/
 # Simulation outputs
 # ===============================================
 compress_rate/compress_rate_*/
+RLP_exp/
